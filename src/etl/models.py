@@ -11,21 +11,26 @@ Base = declarative_base()
 class Chapter(Base):
     """Entity representing youthmapper chapters, their location in the world, and members of their chapter. """
     __tablename__ = 'chapter'
-    name = Column(String, primary_key=True)
-    institution = Column(String)
+    name = Column(String)
+    institution = Column(String, primary_key=True)
     city = Column(String)
+    country = Column(String)
     rank = Column(String)
     location = Column(Geography(geometry_type='POINT', srid=4326))
     ## one - to - many relationship for members of a Youthmapper chapter
-    members = relationship("User", backref=backref('chapter', lazy='dynamic'))
+    members = relationship("User")
 
 
 class User(Base):
     """Entity representing any account that has contributed to OSM data related to Youthmapper Africa Campaigns."""
     __tablename__ = 'user'
     name = Column(String, primary_key=True)
-    uid = Column(BigInteger)
+    uid = Column(BigInteger, default=-1)
     is_youthmapper = Column(Boolean, default=False)
+    institution = Column(String, ForeignKey('chapter.institution'))
+
+    affiliation = relationship("Chapter", back_populates="members")
+
 
 
 class Changeset(Base):
@@ -34,10 +39,10 @@ class Changeset(Base):
     id = Column(BigInteger, primary_key=True)
     author = Column(String, ForeignKey('user.name'))
     timestamp = Column(DateTime)
-    bbox = Column(Geography(geometry_type='POLYGON'))
+    bbox = Column(Geography(geometry_type='POLYGON', srid=4326))
 
-    elements = relationship('Element', backref=backref('changeset', lazy = 'dynamic'))
-    creator = relationship('User', backref=backref('changesets', lazy='dynamic'))
+    # elements = relationship('Element', backref=backref('changeset', lazy = 'dynamic'))
+    # creator = relationship('User', backref=backref('changesets', lazy='dynamic'))
 
 
 class Element(Base):
@@ -46,7 +51,7 @@ class Element(Base):
     timestamp = Column(DateTime)
     changeset_id = Column(BigInteger, ForeignKey('changeset.id'))
     type = Column(String)
-
+    author_name = Column(String, ForeignKey('user.name'))
     author = relationship("User", backref='mappings')
 
 
@@ -70,7 +75,7 @@ class Way(Element):
     __tablename__ = 'way'
     osm_id = Column(BigInteger, ForeignKey('element.osm_id'), primary_key=True)
 
-    nodes = association_proxy('way_X_node', 'node')
+    # nodes = association_proxy('way_X_node', 'node')
 
     __mapper_args__ = {
         'polymorphic_identity': 'way',
@@ -92,16 +97,10 @@ class WayXNode(Base):
 
     node_id = Column(BigInteger, ForeignKey('node.osm_id'), primary_key=True)
     way_id = Column(BigInteger, ForeignKey('way.osm_id'), primary_key=True)
-    way_changeset = Column(BigInteger, primary_key=True)
+    way_changeset = Column(BigInteger,ForeignKey('changeset.id'), primary_key=True)
     position = Column(Integer, primary_key=True)
 
-    way = relationship(Way, backref=backref("nodes", cascade="all, delete-orphan"))
-    node = relationship("Node")
 
-    def __init__(self, way = None, node = None, position = None):
-        self.way = way
-        self.node = node
-        self.position = position
 
 
 class ElementTag(Base):
@@ -111,9 +110,6 @@ class ElementTag(Base):
     value = Column(String, primary_key=True)
     osm_id = Column(BigInteger, ForeignKey('element.osm_id'), primary_key=True)
 
-    element = relationship("Element", backref('tags', lazy='dynamic'))
-
-
 class ChangesetTag(Base):
     __tablename__ = 'changeset_tags'
 
@@ -121,7 +117,9 @@ class ChangesetTag(Base):
     value = Column(String, primary_key=True)
     changeset_id = Column(BigInteger, ForeignKey('changeset.id'), primary_key=True)
 
-    changeset = relationship("Changeset", backref('tags', lazy='dynamic'))
+    # changeset = relationship("Changeset", backref('tags', lazy='dynamic'))
+
+
 
 
 
