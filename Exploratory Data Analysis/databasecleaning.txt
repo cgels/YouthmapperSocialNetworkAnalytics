@@ -1,0 +1,15 @@
+Database cleaning
+
+Element Tags:
+    Remove all '_closed_way' tags from Key
+    Remove all 'created_by' tags from Key
+    
+Change Set Tags:
+    Remove all 'created_by' from Key
+    
+user:
+    Mostly unkown users. We need to decide what to do about them or try and get more information
+    
+Elements:
+    Remove all dates before December 2015
+    
